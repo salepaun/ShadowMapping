@@ -87,18 +87,18 @@ namespace ShadowMapping
 
         private int cubeVertexBufferObject;
         private int planeVertexBufferObject;
-        private int _vaoModel;
-        private int _vaoPlane;
+        private int vaoCube;
+        private int vaoPlane;
         private int vaoLamp;
+        private int depthMapFBO;
+        private int depthMap;
 
         private Shader lampShader;
         private Shader lightingShader;
-        private Texture diffuseMap;
-        private Texture specularMap;
         
         private Camera camera;
-        private bool _firstMove = true;
-        private Vector2 _lastPos;
+        private bool firstMove = true;
+        private Vector2 lastPos;
 
         public Window(int width, int height, string title) : base(width, height, GraphicsMode.Default, title) { }
         
@@ -114,11 +114,9 @@ namespace ShadowMapping
 
             lightingShader = new Shader("Shaders/shader.vert", "Shaders/lighting.frag");
             lampShader = new Shader("Shaders/shader.vert", "Shaders/shader.frag");
-            diffuseMap = new Texture(@"C:\Git\LearnOpenGL-TK\Chapter 2\5 - Light casters - directional lights\Resources\container2.png");
-            specularMap = new Texture(@"C:\Git\LearnOpenGL-TK\Chapter 2\5 - Light casters - directional lights\Resources\container2_specular.png");
 
-            _vaoModel = GL.GenVertexArray();
-            GL.BindVertexArray(_vaoModel);
+            vaoCube = GL.GenVertexArray();
+            GL.BindVertexArray(vaoCube);
             
             GL.BindBuffer(BufferTarget.ArrayBuffer, cubeVertexBufferObject);
 
@@ -143,8 +141,8 @@ namespace ShadowMapping
             GL.BindBuffer(BufferTarget.ArrayBuffer, planeVertexBufferObject);
             GL.BufferData(BufferTarget.ArrayBuffer, planeVerticies.Length * sizeof(float), planeVerticies, BufferUsageHint.StaticDraw);
             
-            _vaoPlane = GL.GenVertexArray();
-            GL.BindVertexArray(_vaoPlane);
+            vaoPlane = GL.GenVertexArray();
+            GL.BindVertexArray(vaoPlane);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, planeVertexBufferObject);
             
@@ -156,6 +154,8 @@ namespace ShadowMapping
             GL.EnableVertexAttribArray(normalLocation);
             GL.VertexAttribPointer(normalLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
 
+            SetupShadowMap();
+            
             camera = new Camera(Vector3.UnitY * 3 + Vector3.UnitZ * 10, Width / (float) Height);
             
             CursorVisible = false;
@@ -163,17 +163,39 @@ namespace ShadowMapping
             base.OnLoad(e);
         }
 
+        private void SetupShadowMap()
+        {
+            GL.GenFramebuffers(1, out depthMapFBO);
+            GL.GenTextures(1, out depthMap);
+            
+            GL.BindTexture(TextureTarget.Texture2D, depthMap);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, 1024, 1024, 0,
+                PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter,
+                (int) TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter,
+                (int) TextureMagFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS,
+                (int) TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT,
+                (int) TextureWrapMode.Repeat);
+            
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, depthMapFBO);
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment,
+                TextureTarget.Texture2D, depthMap, 0);
+            GL.DrawBuffer(DrawBufferMode.None);
+            GL.ReadBuffer(ReadBufferMode.None);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        }
+
 
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            GL.BindVertexArray(_vaoModel);
+            GL.BindVertexArray(vaoCube);
 
-            diffuseMap.Use();
-            specularMap.Use(TextureUnit.Texture1);
             lightingShader.Use();
-            
             lightingShader.SetMatrix4("view", camera.GetViewMatrix());
             lightingShader.SetMatrix4("projection", camera.GetProjectionMatrix());
             
@@ -208,7 +230,7 @@ namespace ShadowMapping
 
             }
             
-            GL.BindVertexArray(_vaoPlane);
+            GL.BindVertexArray(vaoPlane);
             
             var planeMatrix = Matrix4.Identity;
             planeMatrix *= Matrix4.CreateTranslation(-Vector3.UnitY * 10);
@@ -272,16 +294,16 @@ namespace ShadowMapping
 
             var mouse = Mouse.GetState();
 
-            if (_firstMove)
+            if (firstMove)
             {
-                _lastPos = new Vector2(mouse.X, mouse.Y);
-                _firstMove = false;
+                lastPos = new Vector2(mouse.X, mouse.Y);
+                firstMove = false;
             }
             else
             {
-                var deltaX = mouse.X - _lastPos.X;
-                var deltaY = mouse.Y - _lastPos.Y;
-                _lastPos = new Vector2(mouse.X, mouse.Y);
+                var deltaX = mouse.X - lastPos.X;
+                var deltaY = mouse.Y - lastPos.Y;
+                lastPos = new Vector2(mouse.X, mouse.Y);
                 
                 camera.Yaw += deltaX * sensitivity;
                 camera.Pitch -= deltaY * sensitivity;
@@ -322,11 +344,14 @@ namespace ShadowMapping
             GL.UseProgram(0);
 
             GL.DeleteBuffer(cubeVertexBufferObject);
-            GL.DeleteVertexArray(_vaoModel);
+            GL.DeleteVertexArray(vaoCube);
             GL.DeleteVertexArray(vaoLamp);
 
             GL.DeleteProgram(lampShader.Handle);
             GL.DeleteProgram(lightingShader.Handle);
+            
+            GL.DeleteFramebuffer(depthMapFBO);
+            GL.DeleteTexture(depthMap);
 
             base.OnUnload(e);
         }

@@ -60,6 +60,10 @@
       <Content Include="Shaders\lighting.frag" />
       <Content Include="Shaders\shader.frag" />
       <Content Include="Shaders\shader.vert" />
+      <Content Include="Shaders\shadowMapping.frag" />
+      <Content Include="Shaders\shadowMapping.vert" />
+      <Content Include="Shaders\shadowMappingDepth.frag" />
+      <Content Include="Shaders\shadowMappingDepth.vert" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
