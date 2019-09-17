@@ -59,12 +59,12 @@ namespace ShadowMapping
 
         private readonly float[] planeVerticies =
         {
-            -10f,  0f, -10f,  
-             10f,  0f, -10f,  
-             10f,  0f,  10f,  
-            -10f,  0f, -10f,  
-             10f,  0f,  10f,
-            -10f,  0f,  10f, 
+            -20f, 0f, -20f, 0f, 1f, 0f,
+             20f, 0f, -20f, 0f, 1f, 0f,
+             20f, 0f,  20f, 0f, 1f, 0f,
+            -20f, 0f, -20f, 0f, 1f, 0f,
+             20f, 0f,  20f, 0f, 1f, 0f,
+            -20f, 0f,  20f, 0f, 1f, 0f,
         };
         
         // We draw multiple different cubes and it helps to store all
@@ -88,8 +88,8 @@ namespace ShadowMapping
         private int cubeVertexBufferObject;
         private int planeVertexBufferObject;
         private int _vaoModel;
-        private int _vaoLamp;
         private int _vaoPlane;
+        private int vaoLamp;
 
         private Shader lampShader;
         private Shader lightingShader;
@@ -101,7 +101,6 @@ namespace ShadowMapping
         private Vector2 _lastPos;
 
         public Window(int width, int height, string title) : base(width, height, GraphicsMode.Default, title) { }
-
         
         protected override void OnLoad(EventArgs e)
         {
@@ -130,13 +129,9 @@ namespace ShadowMapping
             var normalLocation = lightingShader.GetAttribLocation("aNormal");
             GL.EnableVertexAttribArray(normalLocation);
             GL.VertexAttribPointer(normalLocation, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 3 * sizeof(float));
-            
-            var texCoordLocation = lightingShader.GetAttribLocation("aTexCoords");
-            GL.EnableVertexAttribArray(texCoordLocation);
-            GL.VertexAttribPointer(texCoordLocation, 2, VertexAttribPointerType.Float, false, 8 * sizeof(float), 6 * sizeof(float));
 
-            _vaoLamp = GL.GenVertexArray();
-            GL.BindVertexArray(_vaoLamp);
+            vaoLamp = GL.GenVertexArray();
+            GL.BindVertexArray(vaoLamp);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, cubeVertexBufferObject);
 
@@ -152,10 +147,14 @@ namespace ShadowMapping
             GL.BindVertexArray(_vaoPlane);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, planeVertexBufferObject);
-
-            positionLocation = lampShader.GetAttribLocation("aPos");
+            
+            positionLocation = lightingShader.GetAttribLocation("aPos");
             GL.EnableVertexAttribArray(positionLocation);
-            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
+            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            
+            normalLocation = lightingShader.GetAttribLocation("aNormal");
+            GL.EnableVertexAttribArray(normalLocation);
+            GL.VertexAttribPointer(normalLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
 
             camera = new Camera(Vector3.UnitY * 3 + Vector3.UnitZ * 10, Width / (float) Height);
             
@@ -180,14 +179,11 @@ namespace ShadowMapping
             
             lightingShader.SetVector3("viewPos", camera.Position);
             
-            lightingShader.SetInt("material.diffuse", 0);
-            lightingShader.SetInt("material.specular", 1);
-            lightingShader.SetVector3("material.specular", new Vector3(0.5f, 0.5f, 0.5f));
             lightingShader.SetFloat("material.shininess", 32.0f);
+            lightingShader.SetVector3("material.color", new Vector3(0, 0, 1));
             
             // Directional light needs a direction, in this example we just use (-0.2, -1.0, -0.3f) as the lights direction
-            lightingShader.SetVector3("light.direction", new Vector3(-0.2f, -1.0f, -0.3f));
-            lightingShader.SetVector3("light.ambient",  new Vector3(0.2f));
+            lightingShader.SetVector3("light.direction", new Vector3(0f, -1.0f, 0f));
             lightingShader.SetVector3("light.diffuse",  new Vector3(0.5f));
             lightingShader.SetVector3("light.specular", new Vector3(1.0f));
 
@@ -208,10 +204,21 @@ namespace ShadowMapping
                 lightingShader.SetMatrix4("model", model);
                 
                 // At last we draw all our cubes
-                GL.DrawArrays(PrimitiveType.Triangles, 0, 36);                
-            }
+                GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
 
-            GL.BindVertexArray(_vaoLamp);
+            }
+            
+            GL.BindVertexArray(_vaoPlane);
+            
+            var planeMatrix = Matrix4.Identity;
+            planeMatrix *= Matrix4.CreateTranslation(-Vector3.UnitY * 10);
+            
+            lightingShader.SetMatrix4("model", planeMatrix);
+            lightingShader.SetVector3("material.color", new Vector3(1, 1, 1));
+            
+            GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
+            
+            GL.BindVertexArray(vaoLamp);
             
             lampShader.Use();
 
@@ -222,14 +229,9 @@ namespace ShadowMapping
             lampShader.SetMatrix4("model", lampMatrix);
             lampShader.SetMatrix4("view", camera.GetViewMatrix());
             lampShader.SetMatrix4("projection", camera.GetProjectionMatrix());
+            lampShader.SetVector4("color", new Vector4(1));
             
             GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
-
-            GL.BindVertexArray(_vaoPlane);
-            
-            lightingShader.Use();
-            lightingShader.SetMatrix4("model", Matrix4.Identity);
-            GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
 
             SwapBuffers();
 
@@ -251,7 +253,7 @@ namespace ShadowMapping
                 Exit();
             }
             
-            const float cameraSpeed = 1.5f;
+            const float cameraSpeed = 3f;
             const float sensitivity = 0.2f;
             
             
@@ -321,7 +323,7 @@ namespace ShadowMapping
 
             GL.DeleteBuffer(cubeVertexBufferObject);
             GL.DeleteVertexArray(_vaoModel);
-            GL.DeleteVertexArray(_vaoLamp);
+            GL.DeleteVertexArray(vaoLamp);
 
             GL.DeleteProgram(lampShader.Handle);
             GL.DeleteProgram(lightingShader.Handle);
