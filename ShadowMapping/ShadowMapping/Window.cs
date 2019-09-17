@@ -106,6 +106,7 @@ namespace ShadowMapping
         {
             GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
+            GL.Enable(EnableCap.Multisample);
             GL.Enable(EnableCap.DepthTest);
 
             cubeVertexBufferObject = GL.GenBuffer();
@@ -179,7 +180,8 @@ namespace ShadowMapping
                 (int) TextureWrapMode.Repeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT,
                 (int) TextureWrapMode.Repeat);
-            
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureBorderColor,
+                new[] {1f, 1f, 1f, 1f});
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, depthMapFBO);
             GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment,
                 TextureTarget.Texture2D, depthMap, 0);

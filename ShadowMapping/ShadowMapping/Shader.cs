@@ -162,9 +162,13 @@ namespace ShadowMapping
         public void SetInt(string name, int data)
         {
             GL.UseProgram(Handle);
+            if (!_uniformLocations.ContainsKey(name))
+            {
+                return;
+            }
             GL.Uniform1(_uniformLocations[name], data);
         }
-        
+
         /// <summary>
         /// Set a uniform float on this shader.
         /// </summary>
@@ -173,6 +177,11 @@ namespace ShadowMapping
         public void SetFloat(string name, float data)
         {
             GL.UseProgram(Handle);
+            if (!_uniformLocations.ContainsKey(name))
+            {
+                return;
+            }
+
             GL.Uniform1(_uniformLocations[name], data);
         }
 
@@ -189,6 +198,11 @@ namespace ShadowMapping
         public void SetMatrix4(string name, Matrix4 data)
         {
             GL.UseProgram(Handle);
+            if (!_uniformLocations.ContainsKey(name))
+            {
+                return;
+            }
+            
             GL.UniformMatrix4(_uniformLocations[name], true, ref data);
         }
 
@@ -200,6 +214,11 @@ namespace ShadowMapping
         public void SetVector3(string name, Vector3 data)
         {
             GL.UseProgram(Handle);
+            if (!_uniformLocations.ContainsKey(name))
+            {
+                return;
+            }
+            
             GL.Uniform3(_uniformLocations[name], data);
         }
         
@@ -211,6 +230,10 @@ namespace ShadowMapping
         public void SetVector4(string name, Vector4 data)
         {
             GL.UseProgram(Handle);
+            if (!_uniformLocations.ContainsKey(name))
+            {
+                return;
+            }
             GL.Uniform4(_uniformLocations[name], data);
         }
     }
