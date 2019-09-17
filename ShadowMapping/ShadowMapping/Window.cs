@@ -195,21 +195,28 @@ namespace ShadowMapping
         {
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            GL.BindVertexArray(vaoCube);
-
-            lightingShader.Use();
-            lightingShader.SetMatrix4("view", camera.GetViewMatrix());
-            lightingShader.SetMatrix4("projection", camera.GetProjectionMatrix());
-            
-            lightingShader.SetVector3("viewPos", camera.Position);
-            
             lightingShader.SetFloat("material.shininess", 32.0f);
             lightingShader.SetVector3("material.color", new Vector3(0, 0, 1));
-            
             // Directional light needs a direction, in this example we just use (-0.2, -1.0, -0.3f) as the lights direction
             lightingShader.SetVector3("light.direction", new Vector3(0f, -1.0f, 0f));
-            lightingShader.SetVector3("light.diffuse",  new Vector3(0.5f));
+            lightingShader.SetVector3("light.diffuse", new Vector3(0.5f));
             lightingShader.SetVector3("light.specular", new Vector3(1.0f));
+            
+            RenderScene(lightingShader, camera);
+            
+            SwapBuffers();
+
+            base.OnRenderFrame(e);
+        }
+
+        private void RenderScene(Shader shader, Camera cam)
+        {
+            GL.BindVertexArray(vaoCube);
+
+            shader.Use();
+            shader.SetMatrix4("view", cam.GetViewMatrix());
+            shader.SetMatrix4("projection", cam.GetProjectionMatrix());
+            shader.SetVector3("viewPos", cam.Position);
 
             var axis = new Vector3(0.5f, 0f, 0.5f);
             axis.Normalize();
@@ -225,44 +232,24 @@ namespace ShadowMapping
                 // Then we translate said matrix by the cube position
                 model *= Matrix4.CreateTranslation(cubePositions[i]);
                 // Remember to set the model at last so it can be used by opentk
-                lightingShader.SetMatrix4("model", model);
-                
+                shader.SetMatrix4("model", model);
+
                 // At last we draw all our cubes
                 GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
-
             }
-            
+
             GL.BindVertexArray(vaoPlane);
-            
+
             var planeMatrix = Matrix4.Identity;
             planeMatrix *= Matrix4.CreateTranslation(-Vector3.UnitY * 10);
-            
-            lightingShader.SetMatrix4("model", planeMatrix);
-            lightingShader.SetVector3("material.color", new Vector3(1, 1, 1));
-            
+
+            shader.SetMatrix4("model", planeMatrix);
+            shader.SetVector3("material.color", new Vector3(1, 1, 1));
+
             GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
-            
-            GL.BindVertexArray(vaoLamp);
-            
-            lampShader.Use();
-
-            Matrix4 lampMatrix = Matrix4.Identity;
-            lampMatrix *= Matrix4.CreateScale(0.2f);
-            lampMatrix *= Matrix4.CreateTranslation(_lightPos);
-            
-            lampShader.SetMatrix4("model", lampMatrix);
-            lampShader.SetMatrix4("view", camera.GetViewMatrix());
-            lampShader.SetMatrix4("projection", camera.GetProjectionMatrix());
-            lampShader.SetVector4("color", new Vector4(1));
-            
-            GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
-
-            SwapBuffers();
-
-            base.OnRenderFrame(e);
         }
 
-        
+
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             if (!Focused)
