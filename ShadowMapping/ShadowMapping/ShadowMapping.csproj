@@ -62,6 +62,8 @@
       <Content Include="Shaders\shader.vert" />
       <Content Include="Shaders\shadowMapping.frag" />
       <Content Include="Shaders\shadowMapping.vert" />
+      <Content Include="Shaders\shadowMappingDebug.frag" />
+      <Content Include="Shaders\shadowMappingDebug.vert" />
       <Content Include="Shaders\shadowMappingDepth.frag" />
       <Content Include="Shaders\shadowMappingDepth.vert" />
     </ItemGroup>
