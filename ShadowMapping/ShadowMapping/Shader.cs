@@ -204,7 +204,7 @@ namespace ShadowMapping
             }
             
             GL.UseProgram(Handle);
-            GL.UniformMatrix4(_uniformLocations[name], true, ref data);
+            GL.UniformMatrix4(_uniformLocations[name], false, ref data);
         }
 
         /// <summary>
